@@ -17,6 +17,9 @@ if (!browser) {
     console.log("Using default browser: chrome");
     browser = "chrome";
 }
+else if (browser !== 'chrome' && browser !== 'firefox') {
+    throw `Unsupported browser: "${browser}", must be "chrome" or "firefox"`
+}
 else {
     console.log("Using browser: " + browser);
 }
@@ -620,6 +623,26 @@ it('Allows selection of dash testnet', function(done) {
         selectText: "DASH - Dash Testnet",
         phrase: "abandon abandon ability",
         firstAddress: "yaR52EN4oojdJfBgzWJTymC4uuCLPT29Gw",
+        firstPubKey: "0382a5450765e2025bdb5f7d109c9254a11ef97a566228bf171d80ecb348763bb0",
+        firstPrivKey: "cV3coiYD2NhHKfhC6Gb8DzpvPzcGYYExYxuNxpUtKq3VUJrkFLZx",
+    };
+    testNetwork(done, params);
+});
+it('Allows selection of divi', function(done) {
+    var params = {
+        selectText: "DIVI - DIVI",
+        phrase: "abandon abandon ability",
+        firstAddress: "DLeGz7jqF1y1cmfEkSeRBkQPK8vTZ8rHt4",
+        firstPubKey: "032ade8a36983a1efcc40d64b2a1a52cc26a908f7dc2fa222f43598812dd10d8bc",
+        firstPrivKey: "YWG1Fht24fMUntuAhVRMPSj2eVN7BxkM7SuuqRhg1ibsTNbr31VF",
+    };
+    testNetwork(done, params);
+});
+it('Allows selection of divi testnet', function(done) {
+    var params = {
+        selectText: "DIVI - DIVI Testnet",
+        phrase: "abandon abandon ability",
+        firstAddress: "yB5U384n6dGkVE3by5y9VdvHHPwPg68fQj",
         firstPubKey: "0382a5450765e2025bdb5f7d109c9254a11ef97a566228bf171d80ecb348763bb0",
         firstPrivKey: "cV3coiYD2NhHKfhC6Gb8DzpvPzcGYYExYxuNxpUtKq3VUJrkFLZx",
     };
@@ -2409,6 +2432,17 @@ it('Allows selection of ZooBlockchain', function(done) {
     testNetwork(done, params);
 });
 
+it('Allows selection of Particl', function(done) {
+    var params = {
+        selectText: "PART - Particl",
+        phrase: "abandon abandon ability",
+        firstAddress: "Pjf2jj1E4GLJnyZA6jNN25Ajn4wHDahuL5",
+        firstPubKey: "039d803bfa8bd30c9e74c14a8785cee64b696b56e10d7545ad3fbf954c40cbfda2",
+        firstPrivKey: "H79cmSqW1uYVbi14c8VH5eH9UdpjhuvGmXFV8zhkcfR84TEUWfHp",
+    };
+    testNetwork(done, params);
+});
+
 // BIP39 seed is set from phrase
 it('Sets the bip39 seed from the prhase', function(done) {
     driver.findElement(By.css('.phrase'))
@@ -3032,6 +3066,25 @@ it('Uses the correct derivation for altcoins with root keys', function(done) {
     // 1) 2) and 3) set the root key
     driver.findElement(By.css('.root-key'))
         .sendKeys("xprv9s21ZrQH143K2jkGDCeTLgRewT9F2pH5JZs2zDmmjXes34geVnFiuNa8KTvY5WoYvdn4Ag6oYRoB6cXtc43NgJAEqDXf51xPm6fhiMCKwpi");
+    driver.sleep(generateDelay).then(function() {
+        // 4) switch from bitcoin to viacoin
+        selectNetwork("VIA - Viacoin");
+        driver.sleep(generateDelay).then(function() {
+            // 5) ensure the derived address is correct
+            getFirstAddress(function(address) {
+                expect(address).toBe("Vq9Eq4N5SQnjqZvxtxzo7hZPW5XnyJsmXT");
+                done();
+            });
+        });
+    });
+});
+
+// Changing the coin when only using a seed (without a mnemonic phrase) should
+// work the same as the previous test.
+// See https://github.com/iancoleman/bip39/pull/486
+it('Uses the correct derivation for altcoins with seed and without mnemonic phrase', function(done) {
+    driver.findElement(By.css('.seed'))
+        .sendKeys("20da140d3dd1df8713cefcc4d54ce0e445b4151027a1ab567b832f6da5fcc5afc1c3a3f199ab78b8e0ab4652efd7f414ac2c9a3b81bceb879a70f377aa0a58f3");
     driver.sleep(generateDelay).then(function() {
         // 4) switch from bitcoin to viacoin
         selectNetwork("VIA - Viacoin");

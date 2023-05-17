@@ -44,9 +44,13 @@
     DOM.entropyWordIndexes = DOM.entropyContainer.find(".word-indexes");
     DOM.entropyChecksum = DOM.entropyContainer.find(".checksum");
     DOM.entropyMnemonicLength = DOM.entropyContainer.find(".mnemonic-length");
+    DOM.pbkdf2Rounds = DOM.entropyContainer.find(".pbkdf2-rounds");
+    DOM.pbkdf2CustomInput = DOM.entropyContainer.find("#pbkdf2-custom-input");
+    DOM.pbkdf2InfosDanger = $(".PBKDF2-infos-danger");
     DOM.entropyWeakEntropyOverrideWarning = DOM.entropyContainer.find(".weak-entropy-override-warning");
     DOM.entropyFilterWarning = DOM.entropyContainer.find(".filter-warning");
     DOM.phrase = $(".phrase");
+    DOM.autoCompute = $(".autoCompute");
     DOM.splitMnemonic = $(".splitMnemonic");
     DOM.showSplitMnemonic = $(".showSplitMnemonic");
     DOM.phraseSplit = $(".phraseSplit");
@@ -143,8 +147,11 @@
         DOM.network.on("change", networkChanged);
         DOM.bip32Client.on("change", bip32ClientChanged);
         DOM.useEntropy.on("change", setEntropyVisibility);
+        DOM.autoCompute.on("change", delayedPhraseChanged);
         DOM.entropy.on("input", delayedEntropyChanged);
         DOM.entropyMnemonicLength.on("change", entropyChanged);
+        DOM.pbkdf2Rounds.on("change", pbkdf2RoundsChanged);
+        DOM.pbkdf2CustomInput.on("change", pbkdf2RoundsChanged);
         DOM.entropyTypeInputs.on("change", entropyTypeChanged);
         DOM.phrase.on("input", delayedPhraseChanged);
         DOM.showSplitMnemonic.on("change", toggleSplitMnemonic);
@@ -210,7 +217,7 @@
         network.onSelect();
         adjustNetworkForSegwit();
         if (seed != null) {
-            phraseChanged();
+            seedChanged()
         }
         else {
             rootKeyChanged();
@@ -225,13 +232,12 @@
         else {
             DOM.bip32path.prop("readonly", true);
             clients[clientIndex].onSelect();
-            if (seed != null) {
-                phraseChanged();
-            }
-            else {
-                rootKeyChanged();
-            }
+            rootKeyChanged();
         }
+    }
+
+    function isUsingAutoCompute() {
+        return DOM.autoCompute.prop("checked");
     }
 
     function setEntropyVisibility() {
@@ -251,6 +257,8 @@
     }
 
     function delayedPhraseChanged() {
+
+        if(isUsingAutoCompute()) {
         hideValidationError();
         seed = null;
         bip32RootKey = null;
@@ -270,6 +278,11 @@
                 entropyTypeAutoDetect = false;
             }
         }, 400);
+    } else {
+        clearDisplay();
+        clearEntropyFeedback();
+        showValidationError("Auto compute is disabled");
+    }
     }
 
     function phraseChanged() {
@@ -336,6 +349,24 @@
         entropyChangeTimeoutEvent = setTimeout(entropyChanged, 400);
     }
 
+    function pbkdf2RoundsChanged() {
+        if (DOM.pbkdf2Rounds.val() == "custom") {
+            PBKDF2_ROUNDS = DOM.pbkdf2CustomInput.val();
+            DOM.pbkdf2CustomInput.removeClass("hidden");
+        } else {
+            PBKDF2_ROUNDS = DOM.pbkdf2Rounds.val();
+            DOM.pbkdf2CustomInput.addClass("hidden");
+        }
+        ispbkdf2Rounds2048();
+        phraseChanged();
+    }
+    function ispbkdf2Rounds2048() {
+        if (PBKDF2_ROUNDS == 2048) {
+            DOM.pbkdf2InfosDanger.addClass("hidden");
+        } else {
+            DOM.pbkdf2InfosDanger.removeClass("hidden");
+        }
+    }
     function entropyChanged() {
         // If blank entropy, clear mnemonic, addresses, errors
         if (DOM.entropy.val().trim().length == 0) {
@@ -455,7 +486,9 @@
         else {
             network = libs.bitcoin.networks.litecoinXprv;
         }
-        phraseChanged();
+        // Can't use rootKeyChanged because validation will fail as we changed
+        // the network but the version bytes stayed as previously.
+        seedChanged();
     }
 
     function toggleSplitMnemonic() {
@@ -601,7 +634,7 @@
     }
 
     function bitcoinCashAddressTypeChange() {
-        phraseChanged();
+        rootKeyChanged();
     }
 
     function toggleIndexes() {
@@ -1434,14 +1467,14 @@
                     pubkey = CosmosBufferToPublic(keyPair.getPublicKeyBuffer(), hrp);
                     privkey = keyPair.d.toBuffer().toString("base64");
                 }
-              
+
                 if (networks[DOM.network.val()].name == "RUNE - THORChain") {
                      const hrp = "thor";
                      address = CosmosBufferToAddress(keyPair.getPublicKeyBuffer(), hrp);
                      pubkey = keyPair.getPublicKeyBuffer().toString("hex");
                      privkey = keyPair.d.toBuffer().toString("hex");
                 }
-              
+
                 if (networks[DOM.network.val()].name == "XWC - Whitecoin"){
                     address = XWCbufferToAddress(keyPair.getPublicKeyBuffer());
                     pubkey = XWCbufferToPublic(keyPair.getPublicKeyBuffer());
@@ -2604,6 +2637,20 @@
             },
         },
         {
+            name: "DIVI - DIVI",
+            onSelect: function() {
+                network = libs.bitcoin.networks.divi;
+                setHdCoin(301);
+            },
+        },
+        {
+            name: "DIVI - DIVI Testnet",
+            onSelect: function() {
+                network = libs.bitcoin.networks.divitestnet;
+                setHdCoin(1);
+            },
+        },
+        {
             name: "DMD - Diamond",
             onSelect: function() {
                 network = libs.bitcoin.networks.diamond;
@@ -3180,6 +3227,13 @@
             onSelect: function() {
                 network = libs.bitcoin.networks.onixcoin;
                 setHdCoin(174);
+            },
+        },
+        {
+            name: "PART - Particl",
+            onSelect: function() {
+                network = libs.bitcoin.networks.particl;
+                setHdCoin(44);
             },
         },
         {
